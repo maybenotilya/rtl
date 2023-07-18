@@ -20,6 +20,7 @@ public:
         toolEstimator = estimator;
         SetParamIteration();
         SetParamThreshold();
+        SetParamTargetInliers();
     }
 
     virtual double FindBest(Model& best, const Data& data, int N, int M)
@@ -31,7 +32,7 @@ public:
         // Run RANSAC
         double bestloss = HUGE_VAL;
         int iteration = 0;
-        while (IsContinued(iteration))
+        while (IsContinued(iteration, N - bestloss))
         {
             iteration++;
 
@@ -69,8 +70,14 @@ RANSAC_FIND_BEST_EXIT:
 
     int GetParamThreshold(void) { return paramThreshold; }
 
+    void SetParamTargetInliers(int target = 0) { paramTargetInliers = target; }
+
+    int GetParamTargetInliers(void) { return paramTargetInliers; }
+
 protected:
-    virtual bool IsContinued(int iteration) { return (iteration < paramIteration); }
+    virtual bool IsContinued(int iteration, int inliers_count) { 
+      return (iteration < paramIteration && inliers_count < paramTargetInliers); 
+    }
 
     virtual Model GenerateModel(const Data& data, int M)
     {
@@ -86,7 +93,7 @@ protected:
         for (int i = 0; i < N; i++)
         {
             double error = toolEstimator->ComputeError(model, data[i]);
-            loss += (fabs(error) > paramThreshold);
+            loss += (fabs(error) >= paramThreshold);
         }
         return loss;
     }
@@ -113,6 +120,8 @@ protected:
     int paramIteration;
 
     double paramThreshold;
+
+    int paramTargetInliers;
 }; // End of 'RANSAC'
 
 } // End of 'RTL'
